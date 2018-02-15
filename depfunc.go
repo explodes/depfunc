@@ -80,7 +80,7 @@ func (g *Graph) Resolve(ctx context.Context, arg interface{}, recorders ...Visit
 		arg:     arg,
 	}
 
-	recorderList := &visitRecorderList{recorders: recorders}
+	recorder := optionalVisitRecorder(recorders...)
 
 	s.dfsWait.Add(1)
 	defer s.dfsWait.Done()
@@ -89,7 +89,7 @@ func (g *Graph) Resolve(ctx context.Context, arg interface{}, recorders ...Visit
 	rootFound := false
 	for root := range g.collectRoots() {
 		rootFound = true
-		if err := g.dfsResolve(s, "", root, recorderList); err != nil {
+		if err := g.dfsResolve(s, "", root, recorder); err != nil {
 			done()
 			return ctx, err
 		}
@@ -113,7 +113,7 @@ func (g *Graph) Resolve(ctx context.Context, arg interface{}, recorders ...Visit
 // dfsResolve will kick of a goroutine for each of our actions.
 // Each goroutine will be waiting for its dependencies to complete, so a full
 // traversal may be made before any Actions are run.
-func (g *Graph) dfsResolve(s search, parent, name string, recorder *visitRecorderList) error {
+func (g *Graph) dfsResolve(s search, parent, name string, recorder VisitRecorder) error {
 	//if s.searchContextDone() {
 	//	return nil
 	//}
@@ -142,7 +142,7 @@ func (g *Graph) dfsResolve(s search, parent, name string, recorder *visitRecorde
 }
 
 // visit visits a node in the graph, executing the action for the given name
-func (g *Graph) visit(s search, name string, recorderList *visitRecorderList) {
+func (g *Graph) visit(s search, name string, recorder VisitRecorder) {
 	action := g.actions[name]
 
 	children := g.treeOrder[name]
@@ -150,8 +150,8 @@ func (g *Graph) visit(s search, name string, recorderList *visitRecorderList) {
 
 	s.wg.Add(1)
 	go func() {
-		go recorderList.Enter(name)
-		defer func() { go recorderList.Exit(name) }()
+		recorder.Enter(name)
+		defer recorder.Exit(name)
 
 		parents := g.graphOrder[name]
 		defer s.visitComplete(name, parents)
@@ -161,9 +161,9 @@ func (g *Graph) visit(s search, name string, recorderList *visitRecorderList) {
 		}
 		wg.Wait()
 		if !s.searchContextDone() {
-			go recorderList.Start(name)
+			recorder.Start(name)
 			action(s.ctx, s.arg)
-			go recorderList.Finish(name)
+			recorder.Finish(name)
 		}
 	}()
 }

@@ -1,0 +1,10 @@
+goos: linux
+goarch: amd64
+pkg: github.com/explodes/depfunc
+BenchmarkGraph_Resolve-8                     	   30000	     61373 ns/op	    7175 B/op	      68 allocs/op
+BenchmarkGraph_Resolve_recorded-8            	   20000	     57362 ns/op	    7283 B/op	      69 allocs/op
+BenchmarkGraph_Resolve_recorded_multiple-8   	   30000	     60343 ns/op	    8034 B/op	      73 allocs/op
+BenchmarkGraph_Resolve_done-8                	     300	   5674958 ns/op	  308611 B/op	    2159 allocs/op
+BenchmarkGraph_collectRoots-8                	    2000	    658409 ns/op	      96 B/op	       1 allocs/op
+PASS
+ok  	github.com/explodes/depfunc	11.532s

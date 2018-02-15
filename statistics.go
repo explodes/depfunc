@@ -182,18 +182,19 @@ func (v visitRecorderList) Exit(name string) {
 // noopVisitRecorder is a VisitRecorder that does nothing
 type noopVisitRecorder struct{}
 
-func (noopVisitRecorder) Enter(name string) {}
+func (*noopVisitRecorder) Enter(name string) {}
 
-func (noopVisitRecorder) Start(name string) {}
+func (*noopVisitRecorder) Start(name string) {}
 
-func (noopVisitRecorder) Finish(name string) {}
+func (*noopVisitRecorder) Finish(name string) {}
 
-func (noopVisitRecorder) Exit(name string) {}
+func (*noopVisitRecorder) Exit(name string) {}
 
 func optionalVisitRecorder(recorders ...VisitRecorder) VisitRecorder {
 	switch len(recorders) {
 	case 0:
-		return noopVisitRecorder{}
+		var noop *noopVisitRecorder
+		return noop
 	case 1:
 		return recorders[0]
 	default:
