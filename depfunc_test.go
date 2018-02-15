@@ -280,12 +280,12 @@ func TestGraph_collectRoots(t *testing.T) {
 
 	roots := g.collectRoots()
 
-	expected := make(stringset)
+	expected := make(StringSet)
 	for _, c := range "fgdjk" {
 		expected.Add(string(c))
 	}
 
-	actual := make(stringset)
+	actual := make(StringSet)
 	for c := range roots {
 		actual.Add(string(c))
 	}
@@ -318,6 +318,29 @@ func BenchmarkGraph_Resolve(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		visitorData := newVisitordata()
 		ctx, _ := g.Resolve(testContext(), visitorData)
+		<-ctx.Done()
+	}
+}
+
+func BenchmarkGraph_Resolve_recorded(b *testing.B) {
+	g := deepGraph(b, 10)
+	recorder := NewStatistics().VisitRecorder()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		visitorData := newVisitordata()
+		ctx, _ := g.Resolve(testContext(), visitorData, recorder)
+		<-ctx.Done()
+	}
+}
+
+func BenchmarkGraph_Resolve_recorded_multiple(b *testing.B) {
+	g := deepGraph(b, 10)
+	recorderA := NewStatistics().VisitRecorder()
+	recorderB := NewStatistics().VisitRecorder()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		visitorData := newVisitordata()
+		ctx, _ := g.Resolve(testContext(), visitorData, recorderA, recorderB)
 		<-ctx.Done()
 	}
 }

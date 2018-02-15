@@ -57,7 +57,7 @@ func TestStringmultimap_AddToSet(t *testing.T) {
 }
 
 func TestStringset_Add(t *testing.T) {
-	s := make(stringset)
+	s := make(StringSet)
 
 	assert.Len(t, s, 0)
 
@@ -67,7 +67,7 @@ func TestStringset_Add(t *testing.T) {
 }
 
 func TestStringset_Remove(t *testing.T) {
-	s := make(stringset)
+	s := make(StringSet)
 
 	assert.Len(t, s, 0)
 
@@ -78,7 +78,7 @@ func TestStringset_Remove(t *testing.T) {
 }
 
 func TestStringset_Contains(t *testing.T) {
-	s := make(stringset)
+	s := make(StringSet)
 
 	assert.False(t, s.Contains("a"))
 
@@ -88,7 +88,7 @@ func TestStringset_Contains(t *testing.T) {
 }
 
 func TestStringset_String(t *testing.T) {
-	s := make(stringset)
+	s := make(StringSet)
 
 	out := s.String()
 
@@ -96,7 +96,7 @@ func TestStringset_String(t *testing.T) {
 }
 
 func TestStringset_String_value(t *testing.T) {
-	s := make(stringset)
+	s := make(StringSet)
 	s.Add("a")
 
 	out := s.String()
@@ -110,7 +110,7 @@ func TestStringset_String_values(t *testing.T) {
 		aFirst = `{"a","b"}`
 		bFirst = `{"b","a"}`
 	)
-	s := make(stringset)
+	s := make(StringSet)
 	s.Add("a")
 	s.Add("b")
 

@@ -1,8 +1,0 @@
-goos: linux
-goarch: amd64
-pkg: github.com/explodes/scratch/depfunc
-BenchmarkGraph_Resolve-8        	  200000	      9873 ns/op
-BenchmarkGraph_Resolve_done-8   	  200000	     10727 ns/op
-BenchmarkGraph_collectRoots-8   	    2000	    603315 ns/op
-PASS
-ok  	github.com/explodes/scratch/depfunc	7.504s

@@ -14,7 +14,7 @@ import (
 
 	"flag"
 
-	"github.com/explodes/scratch/depfunc"
+	"github.com/explodes/depfunc"
 )
 
 var (
@@ -30,6 +30,8 @@ var (
 
 	numResolves         = flag.Int("resolves", 1, "number of times to generate applesauce")
 	resolveConcurrently = flag.Bool("concurrent", false, "resolve concurrently")
+
+	showStats = flag.Bool("stats", false, "print stats of a resolve")
 )
 
 var (
@@ -71,13 +73,25 @@ func main() {
 	for i := 0; i < *numResolves; i++ {
 		wg.Add(1)
 		exec := func() {
+
+			stats := depfunc.NewStatistics()
+
+			var recorders []depfunc.VisitRecorder
+			if *showStats {
+				recorders = []depfunc.VisitRecorder{stats.VisitRecorder()}
+			}
+
 			defer wg.Done()
 			answers := &Answers{}
-			ctx, err := graph.Resolve(ctx, answers)
+			ctx, err := graph.Resolve(ctx, answers, recorders...)
 			must(err)
 			select {
 			case <-ctx.Done():
 				fmt.Printf("%s\n", answers)
+			}
+
+			if *showStats {
+				printStats(stats)
 			}
 		}
 		if *resolveConcurrently {
@@ -192,5 +206,11 @@ func makeAction(name string, assign func(*Answers, *Answer)) depfunc.Action {
 func debug(msg string, args ...interface{}) {
 	if *logDebug {
 		fmt.Printf("%s\n", fmt.Sprintf(msg, args...))
+	}
+}
+
+func printStats(stats *depfunc.Statistics) {
+	for name := range stats.Names() {
+		fmt.Printf("%s: wait=%v action=%v total=%v\n", name, stats.Wait(name), stats.Action(name), stats.Total(name))
 	}
 }

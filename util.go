@@ -2,22 +2,22 @@ package depfunc
 
 import "bytes"
 
-type stringset map[string]struct{}
+type StringSet map[string]struct{}
 
-func (ss stringset) Contains(s string) bool {
+func (ss StringSet) Contains(s string) bool {
 	_, exists := ss[s]
 	return exists
 }
 
-func (ss stringset) Add(s string) {
+func (ss StringSet) Add(s string) {
 	ss[s] = struct{}{}
 }
 
-func (ss stringset) Remove(s string) {
+func (ss StringSet) Remove(s string) {
 	delete(ss, s)
 }
 
-func (ss stringset) String() string {
+func (ss StringSet) String() string {
 	buf := &bytes.Buffer{}
 	buf.WriteRune('{')
 
@@ -36,12 +36,12 @@ func (ss stringset) String() string {
 	return buf.String()
 }
 
-type stringmultimap map[string]stringset
+type stringmultimap map[string]StringSet
 
 func (m stringmultimap) Add(key, value string) {
 	set := m[key]
 	if set == nil {
-		set = make(stringset)
+		set = make(StringSet)
 		m[key] = set
 	}
 	set.Add(value)

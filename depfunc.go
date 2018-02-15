@@ -65,20 +65,22 @@ func (g *Graph) LinkDependency(parent, name string) error {
 // Resolve executes this Graph on a given context.
 // A child context is returned that is done when the
 // Actions are all executed or an error occurs.
-func (g *Graph) Resolve(ctx context.Context, arg interface{}) (context.Context, error) {
+func (g *Graph) Resolve(ctx context.Context, arg interface{}, recorders ...VisitRecorder) (context.Context, error) {
 	// Create a sub-context in which to execute the Actions in this Graph
 	ctx, done := context.WithCancel(ctx)
 
 	// Initialize our search data
 	s := search{
 		waits:   make(map[string]*sync.WaitGroup),
-		visited: make(stringset),
-		path:    make(stringset),
+		visited: make(StringSet),
+		path:    make(StringSet),
 		ctx:     ctx,
 		wg:      &sync.WaitGroup{},
 		dfsWait: &sync.WaitGroup{},
 		arg:     arg,
 	}
+
+	recorderList := &visitRecorderList{recorders: recorders}
 
 	s.dfsWait.Add(1)
 	defer s.dfsWait.Done()
@@ -87,7 +89,7 @@ func (g *Graph) Resolve(ctx context.Context, arg interface{}) (context.Context, 
 	rootFound := false
 	for root := range g.collectRoots() {
 		rootFound = true
-		if err := g.dfsResolve(s, "", root); err != nil {
+		if err := g.dfsResolve(s, "", root, recorderList); err != nil {
 			done()
 			return ctx, err
 		}
@@ -111,12 +113,15 @@ func (g *Graph) Resolve(ctx context.Context, arg interface{}) (context.Context, 
 // dfsResolve will kick of a goroutine for each of our actions.
 // Each goroutine will be waiting for its dependencies to complete, so a full
 // traversal may be made before any Actions are run.
-func (g *Graph) dfsResolve(s search, parent, name string) error {
+func (g *Graph) dfsResolve(s search, parent, name string, recorder *visitRecorderList) error {
+	//if s.searchContextDone() {
+	//	return nil
+	//}
 
 	s.visited.Add(name)
 	s.path.Add(name)
 
-	g.visit(s, name)
+	g.visit(s, name, recorder)
 
 	for child := range g.treeOrder[name] {
 		if s.path.Contains(child) {
@@ -126,7 +131,7 @@ func (g *Graph) dfsResolve(s search, parent, name string) error {
 			continue
 		}
 		if !s.searchContextDone() {
-			if err := g.dfsResolve(s, name, child); err != nil {
+			if err := g.dfsResolve(s, name, child, recorder); err != nil {
 				return err
 			}
 		}
@@ -137,7 +142,7 @@ func (g *Graph) dfsResolve(s search, parent, name string) error {
 }
 
 // visit visits a node in the graph, executing the action for the given name
-func (g *Graph) visit(s search, name string) {
+func (g *Graph) visit(s search, name string, recorderList *visitRecorderList) {
 	action := g.actions[name]
 
 	children := g.treeOrder[name]
@@ -145,6 +150,9 @@ func (g *Graph) visit(s search, name string) {
 
 	s.wg.Add(1)
 	go func() {
+		go recorderList.Enter(name)
+		defer func() { go recorderList.Exit(name) }()
+
 		parents := g.graphOrder[name]
 		defer s.visitComplete(name, parents)
 		s.dfsWait.Wait()
@@ -153,7 +161,9 @@ func (g *Graph) visit(s search, name string) {
 		}
 		wg.Wait()
 		if !s.searchContextDone() {
+			go recorderList.Start(name)
 			action(s.ctx, s.arg)
+			go recorderList.Finish(name)
 		}
 	}()
 }
@@ -181,10 +191,10 @@ type search struct {
 	waits map[string]*sync.WaitGroup
 
 	// visited is the set of visited actions
-	visited stringset
+	visited StringSet
 
 	// recursion is the stack of the currently visited path for cycle detection
-	path stringset
+	path StringSet
 
 	// wg is the wait that signifies that Resolve is complete
 	wg *sync.WaitGroup
@@ -197,7 +207,7 @@ type search struct {
 }
 
 // visitComplete is an action to be performed after an action's goroutine has ended
-func (s *search) visitComplete(name string, parents stringset) {
+func (s *search) visitComplete(name string, parents StringSet) {
 	s.wg.Done()
 	for parent := range parents {
 		parentWg := s.waits[parent]
