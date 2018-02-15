@@ -76,9 +76,9 @@ func main() {
 
 			stats := depfunc.NewStatistics()
 
-			var recorders []depfunc.VisitRecorder
+			var recorders []depfunc.Recorder
 			if *showStats {
-				recorders = []depfunc.VisitRecorder{stats.VisitRecorder()}
+				recorders = []depfunc.Recorder{stats.Recorder()}
 			}
 
 			defer wg.Done()

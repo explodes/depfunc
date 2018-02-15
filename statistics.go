@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-// VisitRecorder is used to monitor events
+// Recorder is used to monitor events
 // when resolving a Graph
-type VisitRecorder interface {
+type Recorder interface {
 	// Enter is when an Action is prepared
 	// to be resolved
 	Enter(name string)
@@ -24,7 +24,7 @@ type VisitRecorder interface {
 }
 
 // Statistics is a way to get statistics about resolved (or cancelled) actions.
-// To record statistics, use the .VisitRecorder() method to get a VisitRecorder
+// To record statistics, use the .Recorder() method to get a Recorder
 // that can be used with Resolve. Statistics should not be re-used between Resolves.
 type Statistics struct {
 	*sync.RWMutex
@@ -33,7 +33,7 @@ type Statistics struct {
 	finish map[string]time.Time
 	exit   map[string]time.Time
 
-	recorder *recorder
+	recorder *timeRecorder
 }
 
 // NewStatistics creates a new Statistics. Statistics can be used to analyze a Resolve.
@@ -50,11 +50,11 @@ func NewStatistics() *Statistics {
 	return p
 }
 
-// VisitRecorder returns a VisitRecord that will record details into this Statistics.
+// Recorder returns a Recorder that will record details into this Statistics.
 // It should not be re-used between multiple Graph Resolves.
-func (s *Statistics) VisitRecorder() VisitRecorder {
+func (s *Statistics) Recorder() Recorder {
 	if s.recorder == nil {
-		s.recorder = &recorder{
+		s.recorder = &timeRecorder{
 			RWMutex: s.RWMutex,
 			enter:   s.enter,
 			start:   s.start,
@@ -118,8 +118,8 @@ func (s *Statistics) Total(name string) time.Duration {
 	return s.duration(s.enter, s.exit, name)
 }
 
-// recorder is a helper for Statistics that implements the VisitRecorder interface
-type recorder struct {
+// timeRecorder is a helper for Statistics that implements the Recorder interface
+type timeRecorder struct {
 	*sync.RWMutex
 	enter  map[string]time.Time
 	start  map[string]time.Time
@@ -127,32 +127,32 @@ type recorder struct {
 	exit   map[string]time.Time
 }
 
-func (p *recorder) recordTime(m map[string]time.Time, name string) {
+func (p *timeRecorder) recordTime(m map[string]time.Time, name string) {
 	p.Lock()
 	m[name] = time.Now()
 	p.Unlock()
 }
 
-func (p *recorder) Enter(name string) {
+func (p *timeRecorder) Enter(name string) {
 	p.recordTime(p.enter, name)
 }
 
-func (p *recorder) Start(name string) {
+func (p *timeRecorder) Start(name string) {
 	p.recordTime(p.start, name)
 }
 
-func (p *recorder) Finish(name string) {
+func (p *timeRecorder) Finish(name string) {
 	p.recordTime(p.finish, name)
 }
 
-func (p *recorder) Exit(name string) {
+func (p *timeRecorder) Exit(name string) {
 	p.recordTime(p.exit, name)
 }
 
-// visitRecorderList is a VisitRecorder that
+// visitRecorderList is a Recorder that
 // operates on a slice of VisitRecorders
 type visitRecorderList struct {
-	recorders []VisitRecorder
+	recorders []Recorder
 }
 
 func (v visitRecorderList) Enter(name string) {
@@ -179,7 +179,7 @@ func (v visitRecorderList) Exit(name string) {
 	}
 }
 
-// noopVisitRecorder is a VisitRecorder that does nothing
+// noopVisitRecorder is a Recorder that does nothing
 type noopVisitRecorder struct{}
 
 func (*noopVisitRecorder) Enter(name string) {}
@@ -190,7 +190,7 @@ func (*noopVisitRecorder) Finish(name string) {}
 
 func (*noopVisitRecorder) Exit(name string) {}
 
-func optionalVisitRecorder(recorders ...VisitRecorder) VisitRecorder {
+func optionalRecorder(recorders ...Recorder) Recorder {
 	switch len(recorders) {
 	case 0:
 		var noop *noopVisitRecorder

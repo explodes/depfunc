@@ -324,7 +324,7 @@ func BenchmarkGraph_Resolve(b *testing.B) {
 
 func BenchmarkGraph_Resolve_recorded(b *testing.B) {
 	g := deepGraph(b, 10)
-	recorder := NewStatistics().VisitRecorder()
+	recorder := NewStatistics().Recorder()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		visitorData := newVisitordata()
@@ -335,8 +335,8 @@ func BenchmarkGraph_Resolve_recorded(b *testing.B) {
 
 func BenchmarkGraph_Resolve_recorded_multiple(b *testing.B) {
 	g := deepGraph(b, 10)
-	recorderA := NewStatistics().VisitRecorder()
-	recorderB := NewStatistics().VisitRecorder()
+	recorderA := NewStatistics().Recorder()
+	recorderB := NewStatistics().Recorder()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		visitorData := newVisitordata()

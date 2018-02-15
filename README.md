@@ -53,7 +53,27 @@ graph.LinkDependency("qa", "applesauce")
 Great! Now every season you can run it like so:
 
 ```go
-graph.Resolve(context.Background(), &factory{})
+ctx, err := graph.Resolve(context.Background(), &factory{})
+checkError(err)
+select {
+ <-ctx.Done():
+ 	fmt.Println("Hooray! Applesauce!")
+}
 ```
 
 And your factory will be full of various products.
+
+Cool, but how long did it take?
+
+```go
+stats := depfunc.NewStatistics()
+
+graph.Resolve(context.Background(), &factory{}, stats.Recorder())
+checkError(err)
+select {
+ <-ctx.Done():
+ 	fmt.Printf("Hooray! Applesauce! Applesauce waited %v to produce, and took %v to actual can it up.\n", stats.Wait(), stats.Action())
+}
+// prints: Hooray! Applesauce! Applesauce waited 337.254578ms to produce, and took 312.194456ms to actual can it up.
+
+```

@@ -65,7 +65,7 @@ func (g *Graph) LinkDependency(parent, name string) error {
 // Resolve executes this Graph on a given context.
 // A child context is returned that is done when the
 // Actions are all executed or an error occurs.
-func (g *Graph) Resolve(ctx context.Context, arg interface{}, recorders ...VisitRecorder) (context.Context, error) {
+func (g *Graph) Resolve(ctx context.Context, arg interface{}, recorders ...Recorder) (context.Context, error) {
 	// Create a sub-context in which to execute the Actions in this Graph
 	ctx, done := context.WithCancel(ctx)
 
@@ -80,7 +80,7 @@ func (g *Graph) Resolve(ctx context.Context, arg interface{}, recorders ...Visit
 		arg:     arg,
 	}
 
-	recorder := optionalVisitRecorder(recorders...)
+	recorder := optionalRecorder(recorders...)
 
 	s.dfsWait.Add(1)
 	defer s.dfsWait.Done()
@@ -113,7 +113,7 @@ func (g *Graph) Resolve(ctx context.Context, arg interface{}, recorders ...Visit
 // dfsResolve will kick of a goroutine for each of our actions.
 // Each goroutine will be waiting for its dependencies to complete, so a full
 // traversal may be made before any Actions are run.
-func (g *Graph) dfsResolve(s search, parent, name string, recorder VisitRecorder) error {
+func (g *Graph) dfsResolve(s search, parent, name string, recorder Recorder) error {
 	//if s.searchContextDone() {
 	//	return nil
 	//}
@@ -142,7 +142,7 @@ func (g *Graph) dfsResolve(s search, parent, name string, recorder VisitRecorder
 }
 
 // visit visits a node in the graph, executing the action for the given name
-func (g *Graph) visit(s search, name string, recorder VisitRecorder) {
+func (g *Graph) visit(s search, name string, recorder Recorder) {
 	action := g.actions[name]
 
 	children := g.treeOrder[name]
